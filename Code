@@ -1,0 +1,216 @@
+#Importing Libraries
+"""
+
+import warnings
+warnings.filterwarnings('ignore')
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import plotly.express as px
+from google.colab import drive
+drive.mount('/content/drive')
+
+"""#Loading DataSet(employee_burnout_analysis.csv)"""
+
+pd.set_option('display.max_columns',None)
+burnoutDF=pd.read_csv('/content/drive/MyDrive/employee_burnout_analysis.csv')
+burnoutDF
+
+#Convert into DateTime Datatype
+burnoutDF["Date of Joining"]=pd.to_datetime(burnoutDF["Date of Joining"])
+
+#Give The no.of Rows & Columns
+burnoutDF.shape
+
+#general Information About Data Set
+burnoutDF.info()
+
+#Top 5 Rows of Data Set
+burnoutDF.head()
+
+#Extracting all Columns of the DataSet
+burnoutDF.columns
+
+#Checking for Null Values
+burnoutDF.isna().sum()
+
+#Check the Duplicate Data
+burnoutDF.duplicated().sum()
+
+#Calculating the Mean,std,Min,Max and Count of Attributes
+burnoutDF.describe()
+
+#Show Unique Values
+for i,col in enumerate(burnoutDF.columns):
+  print(f"\n\n{burnoutDF[col].unique()}")
+  print(f"\n{burnoutDF[col].value_counts()}\n\n")
+
+#Drop Irrelavant Columns
+burnoutDF=burnoutDF.drop(['Employee ID'],axis=1)
+
+#Check the Skewness of the attributes
+intFloatburnoutDF=burnoutDF.select_dtypes([np.int,np.float])
+for i,col in enumerate(intFloatburnoutDF.columns):
+  if (intFloatburnoutDF[col].skew()>=0.1):
+    print("\n",col,"feature is positively skewed and value is:",intFloatburnoutDF[col].skew())
+  elif (intFloatburnoutDF[col].skew()<=-0.1):
+    print("\n",col,"feature is Negatively skewed and value is:",intFloatburnoutDF[col].skew())
+  else:
+    print("\n",col,"feature is Normally Distributed and value is:",intFloatburnoutDF[col].skew())
+
+#Replace The Null Values with Mean
+burnoutDF['Resource Allocation'].fillna(burnoutDF['Resource Allocation'].mean(),inplace=True)
+burnoutDF['Mental Fatigue Score'].fillna(burnoutDF['Mental Fatigue Score'].mean(),inplace=True)
+burnoutDF['Burn Rate'].fillna(burnoutDF['Burn Rate'].mean(),inplace=True)
+
+#Check For Null Values
+burnoutDF.isna().sum()
+
+#Show the Correlation
+burnoutDF.corr()
+
+#Plotting Heat map to check Correlatin
+Corr=burnoutDF.corr()
+sns.set(rc={'figure.figsize':(14,12)})
+fig=px.imshow(Corr,text_auto=True,aspect='auto')
+fig.show()
+
+#Plot Distribution of Gender
+plt.figure(figsize=(10,8))
+sns.countplot(x="Gender",data=burnoutDF,palette="magma")
+plt.title("Plot Distribution of Gender")
+plt.show()
+
+#Plot Distribution of Company Type
+plt.figure(figsize=(10,8))
+sns.countplot(x="Company Type",data=burnoutDF,palette="Spectral")
+plt.title("Plot Distribution of Company Type")
+plt.show()
+
+#Plot Distribution of WFH Setup Available
+plt.figure(figsize=(10,8))
+sns.countplot(x="WFH Setup Available",data=burnoutDF,palette="dark:salmon_r")
+plt.title("Plot Distribution of WFH Setup Available")
+plt.show()
+
+#Plot Distribution of Attributes with the help of Histogram.
+burn_st=burnoutDF.loc[:,'Date of Joining':'Burn Rate']
+burn_st=burn_st.select_dtypes([int,float])
+for i,col in enumerate(burn_st.columns):
+  fig=px.histogram(burn_st,x=col,title="Plot Distribution of "+col,color_discrete_sequence=['indianred'])
+  fig.update_layout(bargap=0.2)
+  fig.show()
+
+#Plot Distribution of Burn rate on the Basis of Designation
+fig=px.line(burnoutDF,y="Burn Rate",color="Designation",title="Burn rate on the Basis of Designation",color_discrete_sequence=px.colors.qualitative.Pastel1)
+fig.update_layout(bargap=0.1)
+fig.show()
+
+#Plot Distribution of Burn rate on the Basis of Gender
+fig=px.line(burnoutDF,y="Burn Rate",color="Gender",title="Burn rate on the Basis of Gender",color_discrete_sequence=px.colors.qualitative.Pastel1)
+fig.update_layout(bargap=0.2)
+fig.show()
+
+#Plot Distribution of Mental Fatigue Score Vs Designation
+fig=px.line(burnoutDF,y="Mental Fatigue Score",color="Designation",title="Mental Fatigue Score Vs Designation",color_discrete_sequence=px.colors.qualitative.Pastel1)
+fig.update_layout(bargap=0.2)
+fig.show()
+
+#Plot Distribution of "Designation Vs Mental Fatigue Score" as per company Type,Burn rate and Gender.
+sns.relplot(
+    data=burnoutDF, x="Designation", y="Mental Fatigue Score", col="Company Type",
+    hue="Company Type", size="Burn Rate", style="Gender",
+    palette=["g","r"],sizes=(50,200)
+)
+
+"""#Label Encoding"""
+
+#label Encoding & assign in New Variable
+from sklearn import preprocessing
+Label_encode=preprocessing.LabelEncoder()
+
+#Assign in New Variable
+burnoutDF['GenderLabel']=Label_encode.fit_transform(burnoutDF['Gender'].values)
+burnoutDF['Company_TypeLabel']=Label_encode.fit_transform(burnoutDF['Company Type'].values)
+burnoutDF['WFH_Setup_AvailableLabel']=Label_encode.fit_transform(burnoutDF['WFH Setup Available'].values)
+
+#Check Assigned values
+gn=burnoutDF.groupby('Gender')
+gn=gn['GenderLabel']
+gn.first()
+
+#Check Assigned values
+gn=burnoutDF.groupby('Company Type')
+gn=gn['Company_TypeLabel']
+gn.first()
+
+#Check Assigned values
+gn=burnoutDF.groupby('WFH Setup Available')
+gn=gn['WFH_Setup_AvailableLabel']
+gn.first()
+
+burnoutDF.tail(10)
+
+#Feature Selection
+cols=['Designation','Resource Allocation','Mental Fatigue Score',
+      'GenderLabel','Company_TypeLabel','WFH_Setup_AvailableLabel']
+x=burnoutDF[cols]
+y=burnoutDF['Burn Rate']
+
+print(x)
+
+print(y)
+
+"""#Implementing PCA"""
+
+#principle Component Analysis
+from sklearn.decomposition import PCA
+pca=PCA(0.95)
+x_pca=pca.fit_transform(x)
+print("PCA shape of X is: ",x_pca.shape,"and original shape is: ",x.shape)
+print("% of Importance of Selected Features is: ",pca.explained_variance_ratio_)
+print("The number of features selected through PCA is: ",pca.n_components_)
+
+"""#Data Splitting"""
+
+#Data Splitting in Train and Test
+from sklearn.model_selection import train_test_split
+x_train_pca,x_test,y_train,y_test=train_test_split(x_pca,y,test_size=0.25,random_state=10)
+
+#print the shape of splitted data
+print(x_train_pca.shape,x_test.shape,y_train.shape,y_test.shape)
+
+"""#Model Implementation"""
+
+#Model Implementation
+from sklearn.metrics import r2_score
+
+"""#RandomForestRegressor"""
+
+#Random Forest Regressor
+from sklearn.ensemble import RandomForestRegressor
+rf_model=RandomForestRegressor()
+rf_model.fit(x_train_pca,y_train)
+train_pred_rf=rf_model.predict(x_train_pca)
+train_r2=r2_score(y_train,train_pred_rf)
+test_pred_rf=rf_model.predict(x_test)
+test_r2=r2_score(y_test,test_pred_rf)
+#Accuracy Score
+print("Accuracy Score of Train Data: "+str(round(100*train_r2,4))+" %")
+print("Accuracy Score of Test Data: "+str(round(100*test_r2,4))+" %")
+
+"""#AdaBoostRegressor"""
+
+#AdaBoost Regressor
+from sklearn.ensemble import AdaBoostRegressor
+abr_model=AdaBoostRegressor()
+abr_model.fit(x_train_pca,y_train)
+train_pred_adaboost=abr_model.predict(x_train_pca)
+train_r2=r2_score(y_train,train_pred_adaboost)
+test_pred_adaboost=abr_model.predict(x_test)
+test_r2=r2_score(y_test,test_pred_adaboost)
+#Accuracy Score
+print("Accuracy Score of Train Data: "+str(round(100*train_r2,4))+" %")
+print("Accuracy Score of Test Data: "+str(round(100*test_r2,4))+" %")
