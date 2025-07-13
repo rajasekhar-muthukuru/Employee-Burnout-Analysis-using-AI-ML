@@ -79,14 +79,7 @@ This project demonstrates how burnout levels can be predicted using demographic 
 
 ---
 
-## 👤 Author
 
-**Rajasekhar Muthukuru**  
-📧 [Email](mailto:your-email@example.com) | 🔗 [LinkedIn](https://linkedin.com/in/rajasekhar-muthukuru-bb8a32268) | 💻 [GitHub](https://github.com/rajasekhar-muthukuru)
-
----
-
-## 📜 License
 
 This project is licensed under the MIT License.
 
